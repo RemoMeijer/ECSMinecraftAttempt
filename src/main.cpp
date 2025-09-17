@@ -5,6 +5,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "camera.h"
+
+Camera camera;
 
 
 // A cube with 6 faces, each with 2 triangles, for a total of 36 vertices.
@@ -53,16 +56,6 @@ float vertices[] = {
     -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f
 };
 
-glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
-
-float yaw = -90.0f;
-float pitch = 0.0f;
-
-float lastX = 600;
-float lastY = 300;
-bool firstMouse = true;
 
 const char* vertexShaderSource = R"glsl(
     #version 330 core
@@ -94,62 +87,11 @@ const char* fragmentShaderSource = R"glsl(
     }
 )glsl";
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    if (firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-    lastX = xpos;
-    lastY = ypos;
-
-    float sensitivity = 0.1f;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    yaw += xoffset;
-    pitch += yoffset;
-
-    // Constrain the pitch to avoid flipping the camera
-    if (pitch > 89.0f)
-        pitch = 89.0f;
-    if (pitch < -89.0f)
-        pitch = -89.0f;
-
-    // Calculate the new front vector
-    glm::vec3 front;
-    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    front.y = sin(glm::radians(pitch));
-    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(front);
-}
-
-void processInput(GLFWwindow *window, float deltaTime)
-{
-    // Close window on escape
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    // Camera movement
-    float cameraSpeed = 2.5f * deltaTime; // Adjust camera speed with time
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-
-}
 
 
 int main() {
+
+    camera = Camera();
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW!\n";
         return -1;
@@ -166,6 +108,7 @@ int main() {
         return -1;
     }
 
+    glfwSetWindowUserPointer(window, &camera);
     glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -174,8 +117,14 @@ int main() {
     }
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    
+    auto mouseCallbackWrapper = [](GLFWwindow* window, double xpos, double ypos) {
+        Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
+        if (camera) {
+            camera->mouse_callback(xpos, ypos);
+        }
+    };
+
+    glfwSetCursorPosCallback(window, mouseCallbackWrapper);
 
     // Create and compile vertex shader
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -221,26 +170,22 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-
     // Unbind the VBO and VAO. Everything is explained, no need to do it again.
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     // **IMPORTANT FOR 3D:** Enable depth testing so faces render correctly
     glEnable(GL_DEPTH_TEST);
-    
 
     float deltaTime = 0.0f; // Time between current frame and last frame
     float lastFrame = 0.0f; // Time of last frame
 
-
-    // --- RENDER LOOP ---
     while(!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        processInput(window, deltaTime);
+        camera.processInput(window, deltaTime);
 
         glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -250,7 +195,7 @@ int main() {
         glm::mat4 model = glm::mat4(1.0f);
         // model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
 
-        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 view = glm::lookAt(camera.cameraPos, camera.cameraPos + camera.cameraFront, camera.cameraUp);
 
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -279,7 +224,4 @@ int main() {
     glfwTerminate();
 
     return 0;
-
 }
-
-

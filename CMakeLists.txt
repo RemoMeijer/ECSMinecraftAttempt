@@ -13,6 +13,7 @@ pkg_search_module(GLFW REQUIRED glfw3)
 add_executable(ecs-minecraft
     src/main.cpp
     src/glad.c
+    src/camera.cpp
 )
 
 
