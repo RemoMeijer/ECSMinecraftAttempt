@@ -10,10 +10,13 @@ find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 
+file(COPY resources DESTINATION ${CMAKE_BINARY_DIR})
+
 add_executable(ecs-minecraft
     src/main.cpp
     src/glad.c
     src/camera.cpp
+    src/shader.cpp
 )
 
 

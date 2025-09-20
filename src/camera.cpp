@@ -12,10 +12,8 @@ Camera::Camera() {}
 
 Camera::~Camera() {}
 
-void Camera::mouse_callback(double xpos, double ypos)
-{
-    if (firstMouse)
-    {
+void Camera::mouse_callback(double xpos, double ypos) {
+    if (firstMouse) {
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;
@@ -34,10 +32,8 @@ void Camera::mouse_callback(double xpos, double ypos)
     pitch += yoffset;
 
     // Constrain the pitch to avoid flipping the camera
-    if (pitch > 89.0f)
-        pitch = 89.0f;
-    if (pitch < -89.0f)
-        pitch = -89.0f;
+    if (pitch > 89.0f)  pitch = 89.0f;
+    if (pitch < -89.0f) pitch = -89.0f;
 
     // Calculate the new front vector
     glm::vec3 front;
@@ -47,8 +43,7 @@ void Camera::mouse_callback(double xpos, double ypos)
     cameraFront = glm::normalize(front);
 }
 
-void Camera::processInput(GLFWwindow *window, float deltaTime)
-{
+void Camera::processInput(GLFWwindow *window, float deltaTime) {
     // Close window on escape
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
