@@ -18,6 +18,7 @@ add_executable(ecs-minecraft
     src/camera.cpp
     src/shader.cpp
     src/chunk.cpp
+    src/framebuffer.cpp
 )
 
 
