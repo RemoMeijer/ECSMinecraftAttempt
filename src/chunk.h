@@ -7,24 +7,14 @@ constexpr int CHUNK_WIDTH = 16;
 constexpr int CHUNK_HEIGHT = 256;
 constexpr int CHUNK_DEPTH = 16;
 
-class Chunk {
-public:
-    Chunk();
-    ~Chunk();
+struct Chunk {
+    BlockID blocks[CHUNK_WIDTH][CHUNK_HEIGHT][CHUNK_DEPTH];
 
-    void generate();
-    void buildMesh();
-    void draw();
+    unsigned int VAO = 0;
+    unsigned int VBO = 0;
+    int vertexCount = 0;
 
-    void setBlock(int x, int y, int z, BlockID type);
-    void rebuildMesh();
-    bool isDirty() const { return m_isDirty; }
-
-private:
-    BlockID m_Blocks[CHUNK_WIDTH][CHUNK_HEIGHT][CHUNK_DEPTH];
-    unsigned int m_VAO, m_VBO;
-    int m_VertexCount;
-    bool m_isDirty = false;
+    bool isDirty = true;
 };
 
 #endif

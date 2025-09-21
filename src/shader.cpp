@@ -87,7 +87,6 @@ void Shader::checkCompileErrors(unsigned int shader, std::string type) {
             std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
         }
     }
-
 }
 
 Shader::~Shader() {

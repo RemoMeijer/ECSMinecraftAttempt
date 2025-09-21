@@ -7,9 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "camera.h"
 #include "shader.h"
-#include "chunk.h"
-#include "block.h"
-#include "framebuffer.h"
+#include "world.h"
 
 Camera camera;
 
@@ -51,107 +49,60 @@ int main() {
     // Create the shader for our main 3D scene (the chunk)
     Shader chunkShader("resources/shader.vert", "resources/shader.frag");
 
-    // Create the shader for the post-processing effect
-    Shader screenShader("resources/screen.vert", "resources/screen.frag");
+    glEnable(GL_DEPTH_TEST);
 
-    // Create the framebuffer object for post-processing
-    Framebuffer postProcessFBO(1200, 600); // Use your window dimensions
+    World world;
+    world.createChunk(0, 0);
+    world.update();
 
-    // Create the chunk and build its mesh
-    Chunk chunk;
-    chunk.buildMesh();
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
 
-    // --- SETUP FOR SCREEN QUAD (Pass 2) ---
-    float quadVertices[] = { 
-        // positions   // texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-        1.0f, -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        1.0f, -1.0f,  1.0f, 0.0f,
-        1.0f,  1.0f,  1.0f, 1.0f
-    };
-
-    unsigned int quadVAO, quadVBO;
-    glGenVertexArrays(1, &quadVAO);
-    glGenBuffers(1, &quadVBO);
-    glBindVertexArray(quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-
-    // **IMPORTANT FOR 3D:** Enable depth testing so faces render correctly
-
-    float deltaTime = 0.0f; // Time between current frame and last frame
-    float lastFrame = 0.0f; // Time of last frame
-
+    int x = 0;
+    int y = 0;
     while(!glfwWindowShouldClose(window)) {
+        // Timing
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        // Input
         camera.processInput(window, deltaTime);
 
-        // =====================================================================
-        // === PASS 1: RENDER THE 3D SCENE TO OUR CUSTOM FRAMEBUFFER (FBO) ===
-        // =====================================================================
-        postProcessFBO.bind(); // Switch the render target to our FBO
-        glEnable(GL_DEPTH_TEST); // Enable depth testing for 3D
-        // Clear the FBO's buffers
+        // Update
+        x++;
+        if (y < 10) {
+            world.createChunk(x, y);
+        }
+        if (x > 10) {
+            y++;
+            x = -1;
+        }
+        
+        world.update();
+
+        // Render
         glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Activate and configure the chunk shader
         chunkShader.use();
-        glm::mat4 model = glm::mat4(1.0f);
+
+        // Set matrices that are the same for all chunks
         glm::mat4 view = glm::lookAt(camera.cameraPos, camera.cameraPos + camera.cameraFront, camera.cameraUp);
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
         
-        chunkShader.setMat4("model", model);
         chunkShader.setMat4("view", view);
         chunkShader.setMat4("projection", projection);
 
-        // Draw the chunk (this draws it into the FBO's texture)
-        chunk.draw();
-        
-        // =====================================================================
-        // === PASS 2: RENDER THE FBO TEXTURE TO THE SCREEN WITH AN EFFECT  ===
-        // =====================================================================
-
-        postProcessFBO.unbind();
-        glDisable(GL_DEPTH_TEST);
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        screenShader.use();
-        glBindVertexArray(quadVAO);
-        
-        // --- BIND BOTH TEXTURES to different texture units ---
-        // Tell the shader that 'colorTexture' uniform is on texture unit 0
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, postProcessFBO.getColorTexture());
-        glUniform1i(glGetUniformLocation(screenShader.ID, "colorTexture"), 0);
-        
-        // Tell the shader that 'depthTexture' uniform is on texture unit 1
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, postProcessFBO.getDepthTexture());
-        glUniform1i(glGetUniformLocation(screenShader.ID, "depthTexture"), 1);
-        
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        world.render(chunkShader);
 
         // --- FINAL STEPS ---
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &quadVAO);
-    glDeleteBuffers(1, &quadVBO);
 
     glfwDestroyWindow(window);
     glfwTerminate();
