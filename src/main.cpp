@@ -1,10 +1,12 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include "camera.h"
 #include "shader.h"
 #include "world.h"
@@ -51,6 +53,28 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    // Set texture wrapping/filtering options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Load image with stb_image
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true); 
+    unsigned char *data = stbi_load("resources/atlas.png", &width, &height, &nrChannels, 0);
+    if (data) {
+        GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data); // Free the image memory
+
     World world;
     world.createChunk(0, 0);
     world.update();
@@ -69,16 +93,7 @@ int main() {
         // Input
         camera.processInput(window, deltaTime);
 
-        // Update
-        x++;
-        if (y < 10) {
-            world.createChunk(x, y);
-        }
-        if (x > 10) {
-            y++;
-            x = -1;
-        }
-        
+        // Update        
         world.update();
 
         // Render
@@ -86,6 +101,10 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         chunkShader.use();
+
+         glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        chunkShader.setInt("texture_atlas", 0);
 
         // Set matrices that are the same for all chunks
         glm::mat4 view = glm::lookAt(camera.cameraPos, camera.cameraPos + camera.cameraFront, camera.cameraUp);

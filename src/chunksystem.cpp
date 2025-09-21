@@ -1,7 +1,28 @@
 #include "chunksystem.h"
 #include <vector>
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
+
+glm::vec2 getTextureCoordinates(BlockID blockType, int face) {
+    const float ATLAS_STEP = 1.0f / 2.0f; // Since your atlas has 2 textures per row/col
+
+    switch (blockType) {
+        case BlockID::Grass:
+            if (face == 0) return {1.0f * ATLAS_STEP, 0.0f * ATLAS_STEP}; // Top face -> Grass Top (1, 0)
+            if (face == 1) return {0.0f * ATLAS_STEP, 0.0f * ATLAS_STEP}; // Bottom face -> Dirt (0, 0)
+            return {0.0f * ATLAS_STEP, 1.0f * ATLAS_STEP};              // Sides -> Grass Side (0, 1)
+        
+        case BlockID::Dirt:
+            return {0.0f * ATLAS_STEP, 0.0f * ATLAS_STEP}; // All faces -> Dirt (0, 0)
+
+        case BlockID::Stone:
+            return {1.0f * ATLAS_STEP, 1.0f * ATLAS_STEP}; // All faces -> Stone (1, 1)
+        
+        default:
+            return {0.0f, 0.0f};
+    }
+}
 
 void ChunkSystem::generate(Chunk &chunk) {
     int groundHeight = 64; // Y-level for flat world
@@ -33,89 +54,91 @@ void ChunkSystem::buildMesh(Chunk &chunk) {
 
     std::vector<float> meshVertices;
 
+    const float ATLAS_STEP = 1.0f / 2.0f;
+
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         for (int z = 0; z < CHUNK_DEPTH; ++z) {
             for (int y = 0; y < CHUNK_HEIGHT; ++y) {
-                // Ignore air blocks
-                if (chunk.blocks[x][y][z] == BlockID::Air) {
-                    continue;
-                }
+                BlockID currentBlock = chunk.blocks[x][y][z];
+                if (chunk.blocks[x][y][z] == BlockID::Air) continue;
 
-                float r = 0.5f, g = 0.5f, b = 0.5f; // stone colours
-                if (chunk.blocks[x][y][z] == BlockID::Grass) { r = 0.0f; g = 1.0f; b = 0.0f; }
-                else if (chunk.blocks[x][y][z] == BlockID::Dirt) { r = 0.6f; g = 0.4f; b = 0.2f; }
-
-                // Check face +X (East)
-                if (x == CHUNK_WIDTH - 1 || chunk.blocks[x + 1][y][z] == BlockID::Air) {
-                    meshVertices.insert(meshVertices.end(), {
-                        (float)x + 1, (float)y,     (float)z,     r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z,     r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y,     (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y,     (float)z,     r,g,b,
-                    });
-                }
-                // Check face -X (West)
-                if (x == 0 || chunk.blocks[x - 1][y][z] == BlockID::Air) {
-                     meshVertices.insert(meshVertices.end(), {
-                        (float)x, (float)y,     (float)z,     r,g,b,
-                        (float)x, (float)y,     (float)z + 1, r,g,b,
-                        (float)x, (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x, (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x, (float)y + 1, (float)z,     r,g,b,
-                        (float)x, (float)y,     (float)z,     r,g,b,
-                    });
-                }
-                // Check face +Y (Top)
+               // Check face +Y (Top)
                 if (y == CHUNK_HEIGHT - 1 || chunk.blocks[x][y + 1][z] == BlockID::Air) {
-                     meshVertices.insert(meshVertices.end(), {
-                        (float)x,     (float)y + 1, (float)z,     r,g,b,
-                        (float)x,     (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z,     r,g,b,
-                        (float)x,     (float)y + 1, (float)z,     r,g,b,
+                    glm::vec2 uv = getTextureCoordinates(currentBlock, 0);
+                    meshVertices.insert(meshVertices.end(), {
+                        (float)x,     (float)y + 1, (float)z,     uv.x,            uv.y + ATLAS_STEP,
+                        (float)x,     (float)y + 1, (float)z + 1, uv.x,            uv.y,
+                        (float)x + 1, (float)y + 1, (float)z + 1, uv.x + ATLAS_STEP, uv.y,
+                        (float)x + 1, (float)y + 1, (float)z + 1, uv.x + ATLAS_STEP, uv.y,
+                        (float)x + 1, (float)y + 1, (float)z,     uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
+                        (float)x,     (float)y + 1, (float)z,     uv.x,            uv.y + ATLAS_STEP,
                     });
                 }
                 // Check face -Y (Bottom)
                 if (y == 0 || chunk.blocks[x][y - 1][z] == BlockID::Air) {
+                    glm::vec2 uv = getTextureCoordinates(currentBlock, 1);
                      meshVertices.insert(meshVertices.end(), {
-                        (float)x,     (float)y, (float)z,     r,g,b,
-                        (float)x + 1, (float)y, (float)z,     r,g,b,
-                        (float)x + 1, (float)y, (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y, (float)z + 1, r,g,b,
-                        (float)x,     (float)y, (float)z + 1, r,g,b,
-                        (float)x,     (float)y, (float)z,     r,g,b,
+                        (float)x,     (float)y, (float)z,     uv.x,            uv.y + ATLAS_STEP,
+                        (float)x + 1, (float)y, (float)z,     uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
+                        (float)x + 1, (float)y, (float)z + 1, uv.x + ATLAS_STEP, uv.y,
+                        (float)x + 1, (float)y, (float)z + 1, uv.x + ATLAS_STEP, uv.y,
+                        (float)x,     (float)y, (float)z + 1, uv.x,            uv.y,
+                        (float)x,     (float)y, (float)z,     uv.x,            uv.y + ATLAS_STEP,
+                    });
+                }
+                // Check face +X (East)
+                if (x == CHUNK_WIDTH - 1 || chunk.blocks[x + 1][y][z] == BlockID::Air) {
+                    glm::vec2 uv = getTextureCoordinates(currentBlock, 2);
+                    meshVertices.insert(meshVertices.end(), {
+                        (float)x + 1, (float)y,     (float)z,     uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
+                        (float)x + 1, (float)y + 1, (float)z,     uv.x + ATLAS_STEP, uv.y,
+                        (float)x + 1, (float)y + 1, (float)z + 1, uv.x,            uv.y,
+                        (float)x + 1, (float)y + 1, (float)z + 1, uv.x,            uv.y,
+                        (float)x + 1, (float)y,     (float)z + 1, uv.x,            uv.y + ATLAS_STEP,
+                        (float)x + 1, (float)y,     (float)z,     uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
+                    });
+                }
+                // Check face -X (West)
+                if (x == 0 || chunk.blocks[x - 1][y][z] == BlockID::Air) {
+                    glm::vec2 uv = getTextureCoordinates(currentBlock, 3);
+                     meshVertices.insert(meshVertices.end(), {
+                        (float)x, (float)y,     (float)z,     uv.x,            uv.y + ATLAS_STEP,
+                        (float)x, (float)y + 1, (float)z,     uv.x,            uv.y,
+                        (float)x, (float)y + 1, (float)z + 1, uv.x + ATLAS_STEP, uv.y,
+                        (float)x, (float)y + 1, (float)z + 1, uv.x + ATLAS_STEP, uv.y,
+                        (float)x, (float)y,     (float)z + 1, uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
+                        (float)x, (float)y,     (float)z,     uv.x,            uv.y + ATLAS_STEP,
                     });
                 }
                 // Check face +Z (South)
                 if (z == CHUNK_DEPTH - 1 || chunk.blocks[x][y][z + 1] == BlockID::Air) {
+                    glm::vec2 uv = getTextureCoordinates(currentBlock, 4);
                      meshVertices.insert(meshVertices.end(), {
-                        (float)x,     (float)y,     (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y,     (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x,     (float)y + 1, (float)z + 1, r,g,b,
-                        (float)x,     (float)y,     (float)z + 1, r,g,b,
+                        (float)x,     (float)y,     (float)z + 1, uv.x,            uv.y + ATLAS_STEP,
+                        (float)x + 1, (float)y,     (float)z + 1, uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
+                        (float)x + 1, (float)y + 1, (float)z + 1, uv.x + ATLAS_STEP, uv.y,
+                        (float)x + 1, (float)y + 1, (float)z + 1, uv.x + ATLAS_STEP, uv.y,
+                        (float)x,     (float)y + 1, (float)z + 1, uv.x,            uv.y,
+                        (float)x,     (float)y,     (float)z + 1, uv.x,            uv.y + ATLAS_STEP,
                     });
                 }
                 // Check face -Z (North)
                 if (z == 0 || chunk.blocks[x][y][z - 1] == BlockID::Air) {
+                    glm::vec2 uv = getTextureCoordinates(currentBlock, 5);
                      meshVertices.insert(meshVertices.end(), {
-                        (float)x,     (float)y,     (float)z, r,g,b,
-                        (float)x,     (float)y + 1, (float)z, r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z, r,g,b,
-                        (float)x + 1, (float)y + 1, (float)z, r,g,b,
-                        (float)x + 1, (float)y,     (float)z, r,g,b,
-                        (float)x,     (float)y,     (float)z, r,g,b,
+                        (float)x,     (float)y,     (float)z, uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
+                        (float)x,     (float)y + 1, (float)z, uv.x + ATLAS_STEP, uv.y,
+                        (float)x + 1, (float)y + 1, (float)z, uv.x,            uv.y,
+                        (float)x + 1, (float)y + 1, (float)z, uv.x,            uv.y,
+                        (float)x + 1, (float)y,     (float)z, uv.x,            uv.y + ATLAS_STEP,
+                        (float)x,     (float)y,     (float)z, uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
                     });
                 }
             }
         }
     }
 
-    chunk.vertexCount = meshVertices.size() / 6; // 6 floats per vertex (3 pos, 3 color)
+    chunk.vertexCount = meshVertices.size() / 5;
 
     glGenVertexArrays(1, &chunk.VAO);
     glGenBuffers(1, &chunk.VBO);
@@ -127,11 +150,11 @@ void ChunkSystem::buildMesh(Chunk &chunk) {
     glBufferData(GL_ARRAY_BUFFER, meshVertices.size() * sizeof(float), meshVertices.data(), GL_STATIC_DRAW);
 
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     // Color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     chunk.isDirty = false;
