@@ -10,25 +10,24 @@ find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 
-file(COPY resources DESTINATION ${CMAKE_BINARY_DIR})
-
-add_executable(ecs-minecraft
-    src/main.cpp
-    src/glad.c
-    src/camera.cpp
-    src/shader.cpp
-    src/chunksystem.cpp
-    src/world.cpp
+file(GLOB_RECURSE SOURCES
+    "src/*.cpp"
+    "lib/glad.c"
 )
 
+add_executable(ecs-minecraft ${SOURCES})
 
 target_include_directories(ecs-minecraft PUBLIC
     "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/lib/glad/include"
+    "${CMAKE_SOURCE_DIR}/lib/glm"
+    "${CMAKE_SOURCE_DIR}/lib"
     ${GLFW_INCLUDE_DIRS}
-
 )
 
 target_link_libraries(ecs-minecraft
     ${GLFW_LIBRARIES}
     OpenGL::GL
 )
+
+file(COPY res DESTINATION ${CMAKE_BINARY_DIR})

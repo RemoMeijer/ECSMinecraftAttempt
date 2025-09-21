@@ -7,9 +7,9 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include "camera.h"
-#include "shader.h"
-#include "world.h"
+#include "graphics/camera.h"
+#include "graphics/shader.h"
+#include "world/world.h"
 
 Camera camera;
 
@@ -64,7 +64,6 @@ int main() {
 
     // Load image with stb_image
     int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); 
     unsigned char *data = stbi_load("resources/atlas.png", &width, &height, &nrChannels, 0);
     if (data) {
         GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
