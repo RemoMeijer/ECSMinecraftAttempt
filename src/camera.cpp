@@ -49,7 +49,7 @@ void Camera::processInput(GLFWwindow *window, float deltaTime) {
         glfwSetWindowShouldClose(window, true);
 
     // Camera movement
-    float cameraSpeed = 2.5f * deltaTime; // Adjust camera speed with time
+    float cameraSpeed = 20.0f * deltaTime; // Adjust camera speed with time
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         cameraPos += cameraSpeed * cameraFront;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)

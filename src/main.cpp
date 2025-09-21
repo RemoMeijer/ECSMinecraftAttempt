@@ -7,59 +7,12 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "camera.h"
 #include "shader.h"
+#include "chunk.h"
 
 Camera camera;
 
-
-// A cube with 6 faces, each with 2 triangles, for a total of 36 vertices.
-float vertices[] = {
-    // positions          // colors
-    -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f, // Back face (red)
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,
-
-    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f, // Front face (green)
-     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,
-
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f, // Left face (blue)
-    -0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
-
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f, // Right face (yellow)
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
-
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f, // Bottom face (cyan)
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,
-
-    -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f, // Top face (magenta)
-     0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f
-};
-
 int main() {
 
-    camera = Camera();
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW!\n";
         return -1;
@@ -96,36 +49,11 @@ int main() {
 
     Shader ourShader("resources/shader.vert", "resources/shader.frag");
 
-    unsigned int VBO, VAO;
-    // Give me a new empty Vertex Array Object
-    glGenVertexArrays(1, &VAO);
-
-    // Give me an new empty Vertex Buffer Object
-    // The VBO uploads the data, e.g. vec array to the GPU for rendering.
-    glGenBuffers(1, &VBO);
-
-    // First, bind the Vertex Array Object, e.g. open it
-    glBindVertexArray(VAO);
-
-    // Then, bind the Vertex Buffer Object and copy our vertex data into it
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Tell the GPU that it can find
-    // For instruction slot 0 in the shader, it can find 3 GL_FLOAT point numbers, 3 * sizeof(float) apart from each other, and it starts right at the beginning of VBO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    // Use instruction 0
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // Unbind the VBO and VAO. Everything is explained, no need to do it again.
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
     // **IMPORTANT FOR 3D:** Enable depth testing so faces render correctly
     glEnable(GL_DEPTH_TEST);
+
+    Chunk chunk;
+    chunk.buildMesh();
 
     float deltaTime = 0.0f; // Time between current frame and last frame
     float lastFrame = 0.0f; // Time of last frame
@@ -155,15 +83,11 @@ int main() {
         ourShader.setMat4("view", view);
         ourShader.setMat4("projection", projection);
 
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        chunk.draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
 
     glfwDestroyWindow(window);
     glfwTerminate();

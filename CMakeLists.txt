@@ -17,6 +17,7 @@ add_executable(ecs-minecraft
     src/glad.c
     src/camera.cpp
     src/shader.cpp
+    src/chunk.cpp
 )
 
 
