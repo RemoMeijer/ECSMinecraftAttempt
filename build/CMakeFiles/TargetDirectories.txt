@@ -1,3 +1,0 @@
-/home/remco/ECSMinecraftAttempt/build/CMakeFiles/ecs-minecraft.dir
-/home/remco/ECSMinecraftAttempt/build/CMakeFiles/edit_cache.dir
-/home/remco/ECSMinecraftAttempt/build/CMakeFiles/rebuild_cache.dir
