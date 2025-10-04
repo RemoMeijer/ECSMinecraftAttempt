@@ -23,6 +23,7 @@ public:
     World();
     void createChunk(int x, int z);
 
+    void updateChunksAroundPlayer(const glm::vec3& position);
     void setBlock(int worldX, int worldY, int worldZ, BlockID type);
     
     void update();
@@ -30,6 +31,8 @@ public:
 
 private:
     std::map<ChunkCoord, Chunk, ivec2_compare> m_Chunks;
+    const int RENDER_DISTANCE = 3;
+    const int UNLOAD_DISTANCE = 4;
 };
 
 #endif

@@ -181,3 +181,14 @@ void ChunkSystem::buildMesh(Chunk &chunk, Chunk* neighbor_posX, Chunk* neighbor_
 
     chunk.isDirty = false;
 }
+
+void ChunkSystem::unloadMesh(Chunk &chunk) {
+    if (chunk.VBO != 0) {
+        glDeleteBuffers(1, &chunk.VBO);
+        chunk.VBO = 0;
+    }
+    if (chunk.VAO != 0) {
+        glDeleteVertexArrays(1, &chunk.VAO);
+        chunk.VAO = 0;
+    }
+}

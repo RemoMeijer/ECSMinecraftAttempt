@@ -1,15 +1,67 @@
 #include "world/world.h"
 #include "world/chunksystem.h"
 #include <glm/gtc/matrix_transform.hpp>
-
+#include <set>
+#include <vector>
 
 World::World() {}
+
 
 void World::createChunk(int x, int z) {
     ChunkCoord coord(x, z);
     m_Chunks[coord] = Chunk(); // Create a new chunk
     ChunkSystem::generate(m_Chunks.at(coord));
 }
+
+void World::updateChunksAroundPlayer(const glm::vec3 &position) {
+    int currentChunkX = static_cast<int>(floor(position.x / CHUNK_WIDTH));
+    int currentChunkZ = static_cast<int>(floor(position.z / CHUNK_DEPTH));
+    std::vector<ChunkCoord> toUnload;
+
+
+    for (auto& [coord, chunk] : m_Chunks) {
+        int dx = abs(coord.x - currentChunkX);
+        int dz = abs(coord.y - currentChunkZ);
+
+        if (dx > UNLOAD_DISTANCE || dz > UNLOAD_DISTANCE) {
+            toUnload.push_back(coord);
+        }
+    }
+
+    for (const auto& coord : toUnload) {
+        ChunkSystem::unloadMesh(m_Chunks.at(coord));
+        m_Chunks.erase(coord);
+    }
+
+    for (int x = currentChunkX - RENDER_DISTANCE; x <= currentChunkX + RENDER_DISTANCE; x++) {
+        for (int z = currentChunkZ - RENDER_DISTANCE; z <= currentChunkZ + RENDER_DISTANCE; z++) {
+            ChunkCoord coord(x, z);
+            
+            if (m_Chunks.find(coord) == m_Chunks.end()) {
+                createChunk(x, z);
+                
+                ChunkCoord neighbor_posX(x + 1, z);
+                ChunkCoord neighbor_negX(x - 1, z);
+                ChunkCoord neighbor_posZ(x, z + 1);
+                ChunkCoord neighbor_negZ(x, z - 1);
+
+                if (m_Chunks.count(neighbor_posX)) {
+                    m_Chunks.at(neighbor_posX).isDirty = true;
+                }
+                if (m_Chunks.count(neighbor_negX)) {
+                    m_Chunks.at(neighbor_negX).isDirty = true;
+                }
+                if (m_Chunks.count(neighbor_posZ)) {
+                    m_Chunks.at(neighbor_posZ).isDirty = true;
+                }
+                if (m_Chunks.count(neighbor_negZ)) {
+                    m_Chunks.at(neighbor_negZ).isDirty = true;
+                }
+            }
+        }
+    }
+}
+
 
 void World::setBlock(int worldX, int worldY, int worldZ, BlockID type) {
     // Convert world coordinates to chunk and local block coordinates

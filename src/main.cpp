@@ -75,16 +75,6 @@ int main() {
     stbi_image_free(data); // Free the image memory
 
     World world;
-    world.createChunk(-1, -1);
-    world.createChunk(-1, 0);
-    world.createChunk(-1, 1);
-    world.createChunk(0, -1);
-    world.createChunk(0, 0);
-    world.createChunk(0, 1);
-    world.createChunk(1, -1);
-    world.createChunk(1, 0);
-    world.createChunk(1, 1);
-    world.update();
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
@@ -100,7 +90,8 @@ int main() {
         // Input
         camera.processInput(window, deltaTime);
 
-        // Update        
+        // Update
+        world.updateChunksAroundPlayer(camera.cameraPos);        
         world.update();
 
         // Render
@@ -117,7 +108,7 @@ int main() {
         glm::mat4 view = glm::lookAt(camera.cameraPos, camera.cameraPos + camera.cameraFront, camera.cameraUp);
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 1000.0f);
         
         chunkShader.setMat4("view", view);
         chunkShader.setMat4("projection", projection);
