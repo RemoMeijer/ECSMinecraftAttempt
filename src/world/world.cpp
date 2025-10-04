@@ -26,9 +26,22 @@ void World::setBlock(int worldX, int worldY, int worldZ, BlockID type) {
 
 void World::update() {
     // This is our "Meshing System". Find all dirty chunks and rebuild their mesh.
-    for (auto& pair : m_Chunks) {
-        if (pair.second.isDirty) {
-            ChunkSystem::buildMesh(pair.second);
+    for (auto& [coord, chunk] : m_Chunks) {
+        if (chunk.isDirty) {
+            // Find neighbors for the current chunk
+            ChunkCoord K_posX = ChunkCoord(coord.x + 1, coord.y);
+            ChunkCoord K_negX = ChunkCoord(coord.x - 1, coord.y);
+            ChunkCoord K_posZ = ChunkCoord(coord.x, coord.y + 1);
+            ChunkCoord K_negZ = ChunkCoord(coord.x, coord.y - 1);
+
+            // Get pointers to neighbors, or nullptr if they don't exist
+            Chunk* p_posX = m_Chunks.count(K_posX) ? &m_Chunks.at(K_posX) : nullptr;
+            Chunk* p_negX = m_Chunks.count(K_negX) ? &m_Chunks.at(K_negX) : nullptr;
+            Chunk* p_posZ = m_Chunks.count(K_posZ) ? &m_Chunks.at(K_posZ) : nullptr;
+            Chunk* p_negZ = m_Chunks.count(K_negZ) ? &m_Chunks.at(K_negZ) : nullptr;
+            
+            // Call buildMesh with the chunk and its neighbors
+            ChunkSystem::buildMesh(chunk, p_posX, p_negX, p_posZ, p_negZ);
         }
     }
 }

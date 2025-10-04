@@ -75,7 +75,15 @@ int main() {
     stbi_image_free(data); // Free the image memory
 
     World world;
+    world.createChunk(-1, -1);
+    world.createChunk(-1, 0);
+    world.createChunk(-1, 1);
+    world.createChunk(0, -1);
     world.createChunk(0, 0);
+    world.createChunk(0, 1);
+    world.createChunk(1, -1);
+    world.createChunk(1, 0);
+    world.createChunk(1, 1);
     world.update();
 
     float deltaTime = 0.0f;

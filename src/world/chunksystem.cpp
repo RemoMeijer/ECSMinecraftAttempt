@@ -5,7 +5,7 @@
 
 
 glm::vec2 getTextureCoordinates(BlockID blockType, int face) {
-    const float ATLAS_STEP = 1.0f / 2.0f; // Since your atlas has 2 textures per row/col
+    const float ATLAS_STEP = 1.0f / 2.0f;
 
     switch (blockType) {
         case BlockID::Grass:
@@ -44,7 +44,7 @@ void ChunkSystem::generate(Chunk &chunk) {
     }
 }
 
-void ChunkSystem::buildMesh(Chunk &chunk) {
+void ChunkSystem::buildMesh(Chunk &chunk, Chunk* neighbor_posX, Chunk* neighbor_negX, Chunk* neighbor_posZ, Chunk* neighbor_negZ) {
     if (chunk.VBO != 0) {
         glDeleteBuffers(1, &chunk.VBO);
     }
@@ -53,18 +53,35 @@ void ChunkSystem::buildMesh(Chunk &chunk) {
     }
 
     std::vector<float> meshVertices;
-
     const float ATLAS_STEP = 1.0f / 2.0f;
 
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         for (int z = 0; z < CHUNK_DEPTH; ++z) {
             for (int y = 0; y < CHUNK_HEIGHT; ++y) {
                 BlockID currentBlock = chunk.blocks[x][y][z];
-                if (chunk.blocks[x][y][z] == BlockID::Air) continue;
+                if (currentBlock == BlockID::Air) continue;
 
-               // Check face +Y (Top)
-                if (y == CHUNK_HEIGHT - 1 || chunk.blocks[x][y + 1][z] == BlockID::Air) {
+                // Helper lambda to check if a block is solid (not Air)
+                auto isBlockSolid = [&](int bx, int by, int bz) {
+                    // Check within the current chunk
+                    if (bx >= 0 && bx < CHUNK_WIDTH && by >= 0 && by < CHUNK_HEIGHT && bz >= 0 && bz < CHUNK_DEPTH) {
+                        return chunk.blocks[bx][by][bz] != BlockID::Air;
+                    }
+                    // Check neighbor chunks
+                    if (by < 0 || by >= CHUNK_HEIGHT) return false; // Out of vertical bounds
+
+                    if (bx < 0) return neighbor_negX && neighbor_negX->blocks[CHUNK_WIDTH + bx][by][bz] != BlockID::Air;
+                    if (bx >= CHUNK_WIDTH) return neighbor_posX && neighbor_posX->blocks[bx - CHUNK_WIDTH][by][bz] != BlockID::Air;
+                    if (bz < 0) return neighbor_negZ && neighbor_negZ->blocks[bx][by][CHUNK_DEPTH + bz] != BlockID::Air;
+                    if (bz >= CHUNK_DEPTH) return neighbor_posZ && neighbor_posZ->blocks[bx][by][bz - CHUNK_DEPTH] != BlockID::Air;
+                    
+                    return false; // Should not be reached
+                };
+
+                // Check face +Y (Top)
+                if (!isBlockSolid(x, y + 1, z)) {
                     glm::vec2 uv = getTextureCoordinates(currentBlock, 0);
+                    // Add vertices for top face...
                     meshVertices.insert(meshVertices.end(), {
                         (float)x,     (float)y + 1, (float)z,     uv.x,            uv.y + ATLAS_STEP,
                         (float)x,     (float)y + 1, (float)z + 1, uv.x,            uv.y,
@@ -75,8 +92,9 @@ void ChunkSystem::buildMesh(Chunk &chunk) {
                     });
                 }
                 // Check face -Y (Bottom)
-                if (y == 0 || chunk.blocks[x][y - 1][z] == BlockID::Air) {
+                if (!isBlockSolid(x, y - 1, z)) {
                     glm::vec2 uv = getTextureCoordinates(currentBlock, 1);
+                    // Add vertices for bottom face...
                      meshVertices.insert(meshVertices.end(), {
                         (float)x,     (float)y, (float)z,     uv.x,            uv.y + ATLAS_STEP,
                         (float)x + 1, (float)y, (float)z,     uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
@@ -87,8 +105,9 @@ void ChunkSystem::buildMesh(Chunk &chunk) {
                     });
                 }
                 // Check face +X (East)
-                if (x == CHUNK_WIDTH - 1 || chunk.blocks[x + 1][y][z] == BlockID::Air) {
+                if (!isBlockSolid(x + 1, y, z)) {
                     glm::vec2 uv = getTextureCoordinates(currentBlock, 2);
+                    // Add vertices for +X face...
                     meshVertices.insert(meshVertices.end(), {
                         (float)x + 1, (float)y,     (float)z,     uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
                         (float)x + 1, (float)y + 1, (float)z,     uv.x + ATLAS_STEP, uv.y,
@@ -99,8 +118,9 @@ void ChunkSystem::buildMesh(Chunk &chunk) {
                     });
                 }
                 // Check face -X (West)
-                if (x == 0 || chunk.blocks[x - 1][y][z] == BlockID::Air) {
+                if (!isBlockSolid(x - 1, y, z)) {
                     glm::vec2 uv = getTextureCoordinates(currentBlock, 3);
+                    // Add vertices for -X face...
                      meshVertices.insert(meshVertices.end(), {
                         (float)x, (float)y,     (float)z,     uv.x,            uv.y + ATLAS_STEP,
                         (float)x, (float)y + 1, (float)z,     uv.x,            uv.y,
@@ -111,8 +131,9 @@ void ChunkSystem::buildMesh(Chunk &chunk) {
                     });
                 }
                 // Check face +Z (South)
-                if (z == CHUNK_DEPTH - 1 || chunk.blocks[x][y][z + 1] == BlockID::Air) {
+                if (!isBlockSolid(x, y, z + 1)) {
                     glm::vec2 uv = getTextureCoordinates(currentBlock, 4);
+                    // Add vertices for +Z face...
                      meshVertices.insert(meshVertices.end(), {
                         (float)x,     (float)y,     (float)z + 1, uv.x,            uv.y + ATLAS_STEP,
                         (float)x + 1, (float)y,     (float)z + 1, uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
@@ -123,8 +144,9 @@ void ChunkSystem::buildMesh(Chunk &chunk) {
                     });
                 }
                 // Check face -Z (North)
-                if (z == 0 || chunk.blocks[x][y][z - 1] == BlockID::Air) {
+                if (!isBlockSolid(x, y, z - 1)) {
                     glm::vec2 uv = getTextureCoordinates(currentBlock, 5);
+                    // Add vertices for -Z face...
                      meshVertices.insert(meshVertices.end(), {
                         (float)x,     (float)y,     (float)z, uv.x + ATLAS_STEP, uv.y + ATLAS_STEP,
                         (float)x,     (float)y + 1, (float)z, uv.x + ATLAS_STEP, uv.y,
