@@ -89,7 +89,8 @@ int main() {
 
         // Input
         camera.processInput(window, deltaTime);
-
+        camera.updatePosition(world, deltaTime);
+        
         // Update
         world.updateChunksAroundPlayer(camera.cameraPos);        
         world.update();
@@ -100,7 +101,7 @@ int main() {
 
         chunkShader.use();
 
-         glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
         chunkShader.setInt("texture_atlas", 0);
 
@@ -115,7 +116,6 @@ int main() {
 
         world.render(chunkShader);
 
-        // --- FINAL STEPS ---
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

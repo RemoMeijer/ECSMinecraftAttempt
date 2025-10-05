@@ -2,6 +2,8 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "graphics/camera.h"
+#include "world/world.h"
+#include "physics/physicssystem.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -48,14 +50,34 @@ void Camera::processInput(GLFWwindow *window, float deltaTime) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
+    velocity.x = 0.0f;
+    velocity.z = 0.0f;
+
+    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        if (velocity.y == 0.0f) {
+            velocity.y += 10.0f;
+            onGround = false;
+        }
+    }
+
     // Camera movement
-    float cameraSpeed = 20.0f * deltaTime; // Adjust camera speed with time
+    float cameraSpeed = 10.0f;
+
+    glm::vec3 front = glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
+    glm::vec3 right = glm::normalize(glm::cross(front, cameraUp));
+
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
+        velocity += front * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
+        velocity -= front * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        velocity -= right * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        velocity += right * cameraSpeed;
+}
+
+void Camera::updatePosition(World& world, float deltaTime) {
+    velocity.y -= World::GRAVITY * deltaTime;
+
+    PhysicsSystem::resolveCollision(world, boundingBox, cameraPos, velocity, onGround, deltaTime);
 }

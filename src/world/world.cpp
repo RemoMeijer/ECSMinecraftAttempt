@@ -13,6 +13,25 @@ void World::createChunk(int x, int z) {
     ChunkSystem::generate(m_Chunks.at(coord));
 }
 
+BlockID World::getBlock(int worldX, int worldY, int worldZ){
+    // Check if out of bounds, and just return air if true.
+    if (worldY < 0 || worldY >= CHUNK_HEIGHT) {
+        return BlockID::Air; 
+    }
+
+    ChunkCoord chunkCoord(floor((float)worldX / CHUNK_WIDTH), floor((float)worldZ / CHUNK_DEPTH));
+
+    // Not a loaded chunk, should not happen
+    if (!m_Chunks.contains(chunkCoord)) {
+        return BlockID::Air;
+    }
+
+    int localX = worldX - chunkCoord.x * CHUNK_WIDTH;
+    int localZ = worldZ - chunkCoord.y * CHUNK_DEPTH;
+
+    return m_Chunks.at(chunkCoord).blocks[localX][worldY][localZ];
+}
+
 void World::updateChunksAroundPlayer(const glm::vec3 &position) {
     int currentChunkX = static_cast<int>(floor(position.x / CHUNK_WIDTH));
     int currentChunkZ = static_cast<int>(floor(position.z / CHUNK_DEPTH));
