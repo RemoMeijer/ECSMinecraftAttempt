@@ -100,7 +100,14 @@ void Camera::processInput(GLFWwindow *window, World& world, float deltaTime) {
             rightMouseButtonPressed = true;
             auto hit = RaycastSystem::cast(world, cameraPos, cameraFront, 5.0f);
             if (hit.has_value()) {
-                world.setBlock(hit->previousBlockPosition.x, hit->previousBlockPosition.y, hit->previousBlockPosition.z, BlockID::Stone);
+                // Check if overlap with player
+                glm::vec3 newBlockCenter = glm::vec3(hit->previousBlockPosition) + 0.5f;
+                AABB newBlockAABB(newBlockCenter, glm::vec3(1.0f));
+
+                // If not, place the block
+                if (!boundingBox.intersects(newBlockAABB)) {
+                    world.setBlock(hit->previousBlockPosition.x, hit->previousBlockPosition.y, hit->previousBlockPosition.z, BlockID::Stone);
+                }
             }
         }
     } else {

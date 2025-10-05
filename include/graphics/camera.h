@@ -25,7 +25,7 @@ public:
     glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
     glm::vec3 velocity = glm::vec3(0.0f);
-    AABB boundingBox{cameraPos, glm::vec3(0.8f, 4.0f, 0.8f)};
+    AABB boundingBox{cameraPos, glm::vec3(0.8f, 3.3f, 0.8f)};
 
     float yaw = -90.0f;
     float pitch = 0.0f;
