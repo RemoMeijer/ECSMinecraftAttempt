@@ -14,7 +14,7 @@ void World::createChunk(int x, int z) {
     ChunkSystem::generate(m_Chunks.at(coord));
 }
 
-BlockID World::getBlock(int worldX, int worldY, int worldZ){
+BlockID World::getBlock(int worldX, int worldY, int worldZ) const {
     // Check if out of bounds, and just return air if true.
     if (worldY < 0 || worldY >= CHUNK_HEIGHT) {
         return BlockID::Air; 
@@ -100,7 +100,7 @@ void World::setBlock(int worldX, int worldY, int worldZ, BlockID type) {
     m_Chunks.at(chunkCoord).blocks[localX][worldY][localZ] = type;
     m_Chunks.at(chunkCoord).isDirty = true;
 
-    //Check for borders and mark neighbors as dirty ---
+    //Check for borders and mark neighbors as dirty
     if (localX == 0) {
         ChunkCoord neighborCoord = {chunkCoord.x - 1, chunkCoord.y};
         if (m_Chunks.contains(neighborCoord)) m_Chunks.at(neighborCoord).isDirty = true;
@@ -119,7 +119,7 @@ void World::setBlock(int worldX, int worldY, int worldZ, BlockID type) {
 }
 
 void World::update() {
-    // This is our "Meshing System". Find all dirty chunks and rebuild their mesh.
+    // Find all dirty chunks and rebuild their mesh.
     for (auto& [coord, chunk] : m_Chunks) {
         if (chunk.isDirty) {
             // Find neighbors for the current chunk
@@ -140,8 +140,8 @@ void World::update() {
     }
 }
 
-void World::render(Shader& shader) {
-    // This is our "Render System". Draw all chunks that have a mesh.
+void World::render(Shader& shader) const {
+    // Draw all chunks that have a mesh.
     for (auto const& [coord, chunk] : m_Chunks) {
         if (chunk.vertexCount > 0) {
             glm::mat4 model = glm::mat4(1.0f);

@@ -25,10 +25,10 @@ public:
 
     void updateChunksAroundPlayer(const glm::vec3& position);
     void setBlock(int worldX, int worldY, int worldZ, BlockID type);
-    BlockID getBlock(int worldX, int worldY, int worldZ);
+    BlockID getBlock(int worldX, int worldY, int worldZ) const;
     
     void update();
-    void render(Shader& shader);
+    void render(Shader& shader) const;
 
     constexpr static float GRAVITY = 30.0f;
 

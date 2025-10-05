@@ -10,6 +10,7 @@
 #include "graphics/camera.h"
 #include "graphics/shader.h"
 #include "world/world.h"
+#include "world/raycast.h"
 
 Camera camera;
 
@@ -49,7 +50,10 @@ int main() {
     glfwSetCursorPosCallback(window, mouseCallbackWrapper);
 
     // Create the shader for our main 3D scene (the chunk)
-    Shader chunkShader("resources/shader.vert", "resources/shader.frag");
+    Shader chunkShader("res/shaders/shader.vert", "res/shaders/shader.frag");
+    // Create the shader for the wireframe
+    Shader wireframeShader("res/shaders/wireframe.vert", "res/shaders/wireframe.frag");
+
 
     glEnable(GL_DEPTH_TEST);
 
@@ -75,6 +79,38 @@ int main() {
     stbi_image_free(data); // Free the image memory
 
     World world;
+
+    float wireframeVertices[] = {
+        // positions
+        0.0f, 0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,   1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 0.0f,
+        //
+        0.0f, 0.0f, 1.0f,   1.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f,   1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,   0.0f, 1.0f, 1.0f,
+        0.0f, 1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+        //
+        0.0f, 0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 0.0f,   1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f,   1.0f, 1.0f, 1.0f,
+        0.0f, 1.0f, 0.0f,   0.0f, 1.0f, 1.0f
+    };
+
+    unsigned int wireframeVAO, wireframeVBO;
+    glGenVertexArrays(1, &wireframeVAO);
+    glGenBuffers(1, &wireframeVBO);
+
+    glBindVertexArray(wireframeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, wireframeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(wireframeVertices), wireframeVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
@@ -115,6 +151,34 @@ int main() {
         chunkShader.setMat4("projection", projection);
 
         world.render(chunkShader);
+
+        auto hit = RaycastSystem::cast(world, camera.cameraPos, camera.cameraFront, 5.0f);
+        if (hit.has_value()) {
+            wireframeShader.use();
+
+            // Create a model matrix to move the wireframe to the hit block's position
+            glm::mat4 model = glm::mat4(1.0f);
+            // We need to translate to the block's integer coordinates
+            model = glm::translate(model, glm::vec3(hit->blockPosition));
+            // 2. Translate to the center of the block to scale from the center
+            model = glm::translate(model, glm::vec3(0.5f));
+            // 3. Scale the cube up by a tiny amount
+            model = glm::scale(model, glm::vec3(1.002f));
+            // 4. Translate back
+            model = glm::translate(model, glm::vec3(-0.5f));
+
+            // Set all the matrices for the wireframe shader
+            wireframeShader.setMat4("model", model);
+            wireframeShader.setMat4("view", view); // Use the same view matrix as the world
+            wireframeShader.setMat4("projection", projection); // Use the same projection matrix
+
+            glLineWidth(3.0f);
+
+            // Draw the wireframe cube
+            glBindVertexArray(wireframeVAO);
+            glDrawArrays(GL_LINES, 0, 24); // 24 vertices for 12 lines
+            glBindVertexArray(0);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();

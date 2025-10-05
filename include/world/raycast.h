@@ -11,7 +11,7 @@ struct RaycastResult {
 };
 
 namespace RaycastSystem {
-    std::optional<RaycastResult> cast(World& world, const glm::vec3& origin, const glm::vec3& direction, float maxDistance);
+    std::optional<RaycastResult> cast(const World& world, const glm::vec3& origin, const glm::vec3& direction, float maxDistance);
 }
 
 #endif
