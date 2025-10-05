@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include "world/chunk.h"
 #include "graphics/shader.h"
+#include "world/FastNoiseLite.h"
 
 struct ivec2_compare {
     bool operator()(const glm::ivec2& a, const glm::ivec2& b) const {
@@ -20,7 +21,7 @@ using ChunkCoord = glm::ivec2;
 
 class World {
 public:
-    World();
+    World(FastNoiseLite& noise, FastNoiseLite& detailNoise);
     void createChunk(int x, int z);
 
     void updateChunksAroundPlayer(const glm::vec3& position);
@@ -34,8 +35,10 @@ public:
 
 private:
     std::map<ChunkCoord, Chunk, ivec2_compare> m_Chunks;
-    const int RENDER_DISTANCE = 3;
-    const int UNLOAD_DISTANCE = 4;
+    const int RENDER_DISTANCE = 9;
+    const int UNLOAD_DISTANCE = 11;
+    FastNoiseLite& m_noise;
+    FastNoiseLite& m_detailNoise;
 };
 
 #endif

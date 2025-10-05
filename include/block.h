@@ -1,7 +1,9 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
-enum class BlockID {
+#include <cstdint>
+
+enum class BlockID : uint8_t {
     Air,
     Grass,
     Dirt,

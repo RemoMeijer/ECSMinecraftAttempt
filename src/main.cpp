@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <chrono>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -11,6 +12,7 @@
 #include "graphics/shader.h"
 #include "world/world.h"
 #include "world/raycast.h"
+#include "world/FastNoiseLite.h"
 
 Camera camera;
 
@@ -78,7 +80,35 @@ int main() {
     }
     stbi_image_free(data); // Free the image memory
 
-    World world;
+    // Random enough seed gen, based on current time
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    auto seed = std::chrono::duration_cast<std::chrono::nanoseconds>(currentTime.time_since_epoch()).count();
+
+    FastNoiseLite noise;
+    noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    noise.SetFrequency(0.003f);
+    noise.SetSeed(static_cast<int>(seed));
+    noise.SetFractalType(noise.FractalType_Ridged);
+    noise.SetFractalLacunarity(1.0f);
+    noise.SetFractalOctaves(4);
+    noise.SetFractalGain(2.0f);
+    noise.SetFractalWeightedStrength(3.0f);
+
+    currentTime = std::chrono::high_resolution_clock::now();
+    seed = std::chrono::duration_cast<std::chrono::nanoseconds>(currentTime.time_since_epoch()).count();
+
+    FastNoiseLite detailNoise;
+    detailNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    detailNoise.SetFrequency(0.07f);
+    detailNoise.SetSeed(static_cast<int>(seed));
+
+    // Calculate a safe spawn height to prevent player clipping on spawn
+    float noiseValue = noise.GetNoise(camera.cameraPos.x, camera.cameraPos.z);
+    float detailValue = detailNoise.GetNoise(camera.cameraPos.x, camera.cameraPos.z);
+    int groundHeight = 64 + (int)(noiseValue * 32.0f) + (int)(detailValue * 5.0f);
+    camera.cameraPos.y = groundHeight + 10.0f; // Add some positions for safety
+
+    World world(noise, detailNoise);
 
     float wireframeVertices[] = {
         // positions

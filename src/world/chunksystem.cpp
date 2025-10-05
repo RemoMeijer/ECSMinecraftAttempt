@@ -1,4 +1,5 @@
 #include "world/chunksystem.h"
+#include "world/FastNoiseLite.h"
 #include <vector>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -24,19 +25,35 @@ glm::vec2 getTextureCoordinates(BlockID blockType, int face) {
     }
 }
 
-void ChunkSystem::generate(Chunk &chunk) {
-    int groundHeight = 64; // Y-level for flat world
+void ChunkSystem::generate(Chunk &chunk, int chunkX, int chunkZ, FastNoiseLite& noise, FastNoiseLite& detailNoise) {
 
-    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+    int worldStartX = chunkX * CHUNK_WIDTH;
+    int worldStartZ = chunkZ * CHUNK_DEPTH;
+
+     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         for (int z = 0; z < CHUNK_DEPTH; ++z) {
+            // Get the world coordinates for this block column
+            int worldX = worldStartX + x;
+            int worldZ = worldStartZ + z;
+
+            // Get a noise value for this (x, z) position.
+            // The noise function returns a value between -1 and 1.
+            float noiseValue = noise.GetNoise((float)worldX, (float)worldZ);
+            float detailValue = detailNoise.GetNoise((float)worldX, (float)worldZ);
+
+            // Convert the noise value to a terrain height.
+            int baseAmplitude = 32.0f;
+            int detailAmplitude = 5.0f;
+            int groundHeight = 64 + (int)(noiseValue * baseAmplitude) + (int)(detailValue * detailAmplitude);
+
             for (int y = 0; y < CHUNK_HEIGHT; ++y) {
-                if (y < groundHeight - 2) {
+                if (y < groundHeight - 3) {
                     chunk.blocks[x][y][z] = BlockID::Stone;
-                } else if (y == groundHeight -2 || y == groundHeight -1) {
+                } else if (y < groundHeight) {
                     chunk.blocks[x][y][z] = BlockID::Dirt;
                 } else if (y == groundHeight) {
                     chunk.blocks[x][y][z] = BlockID::Grass;
-                } else if (y > groundHeight) {
+                } else {
                     chunk.blocks[x][y][z] = BlockID::Air;
                 }
             }

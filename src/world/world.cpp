@@ -5,13 +5,12 @@
 #include <vector>
 #include <iostream>
 
-World::World() {}
-
+World::World(FastNoiseLite &noise, FastNoiseLite& detailNoise) : m_noise(noise), m_detailNoise(detailNoise) {} 
 
 void World::createChunk(int x, int z) {
     ChunkCoord coord(x, z);
     m_Chunks[coord] = Chunk(); // Create a new chunk
-    ChunkSystem::generate(m_Chunks.at(coord));
+    ChunkSystem::generate(m_Chunks.at(coord), x, z, m_noise, m_detailNoise);
 }
 
 BlockID World::getBlock(int worldX, int worldY, int worldZ) const {
