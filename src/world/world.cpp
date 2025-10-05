@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <set>
 #include <vector>
+#include <iostream>
 
 World::World() {}
 
@@ -83,15 +84,37 @@ void World::updateChunksAroundPlayer(const glm::vec3 &position) {
 
 
 void World::setBlock(int worldX, int worldY, int worldZ, BlockID type) {
-    // Convert world coordinates to chunk and local block coordinates
-    ChunkCoord chunkCoord(floor(worldX / CHUNK_WIDTH), floor(worldZ / CHUNK_DEPTH));
-    int localX = worldX % CHUNK_WIDTH;
-    int localZ = worldZ % CHUNK_DEPTH;
+    if (worldY < 0 | worldY >= CHUNK_HEIGHT) return;
 
-    // If the chunk exists, set the block and mark it dirty
-    if (m_Chunks.count(chunkCoord)) {
-        m_Chunks.at(chunkCoord).blocks[localX][worldY][localZ] = type;
-        m_Chunks.at(chunkCoord).isDirty = true;
+    // Convert world coordinates to chunk and local block coordinates
+    std::cout << "Setting block on: " << worldX << ":" << worldY << ":" << worldZ << std::endl;
+    ChunkCoord chunkCoord(floor((float)worldX / CHUNK_WIDTH), floor((float)worldZ / CHUNK_DEPTH));
+
+    if (!m_Chunks.contains(chunkCoord)) {
+        return;
+    }
+
+    int localX = worldX - chunkCoord.x * CHUNK_WIDTH;
+    int localZ = worldZ - chunkCoord.y * CHUNK_DEPTH;
+
+    m_Chunks.at(chunkCoord).blocks[localX][worldY][localZ] = type;
+    m_Chunks.at(chunkCoord).isDirty = true;
+
+    //Check for borders and mark neighbors as dirty ---
+    if (localX == 0) {
+        ChunkCoord neighborCoord = {chunkCoord.x - 1, chunkCoord.y};
+        if (m_Chunks.contains(neighborCoord)) m_Chunks.at(neighborCoord).isDirty = true;
+    } else if (localX == CHUNK_WIDTH - 1) {
+        ChunkCoord neighborCoord = {chunkCoord.x + 1, chunkCoord.y};
+        if (m_Chunks.contains(neighborCoord)) m_Chunks.at(neighborCoord).isDirty = true;
+    }
+
+    if (localZ == 0) {
+        ChunkCoord neighborCoord = {chunkCoord.x, chunkCoord.y - 1};
+        if (m_Chunks.contains(neighborCoord)) m_Chunks.at(neighborCoord).isDirty = true;
+    } else if (localZ == CHUNK_DEPTH - 1) {
+        ChunkCoord neighborCoord = {chunkCoord.x, chunkCoord.y + 1};
+        if (m_Chunks.contains(neighborCoord)) m_Chunks.at(neighborCoord).isDirty = true;
     }
 }
 

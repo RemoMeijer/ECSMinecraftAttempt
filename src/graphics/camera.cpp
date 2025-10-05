@@ -4,6 +4,7 @@
 #include "graphics/camera.h"
 #include "world/world.h"
 #include "physics/physicssystem.h"
+#include "world/raycast.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -45,7 +46,7 @@ void Camera::mouse_callback(double xpos, double ypos) {
     cameraFront = glm::normalize(front);
 }
 
-void Camera::processInput(GLFWwindow *window, float deltaTime) {
+void Camera::processInput(GLFWwindow *window, World& world, float deltaTime) {
     // Close window on escape
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -60,8 +61,13 @@ void Camera::processInput(GLFWwindow *window, float deltaTime) {
         }
     }
 
+    float cameraSpeed;
     // Camera movement
-    float cameraSpeed = 10.0f;
+    if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        cameraSpeed = 10.0f;
+    } else {
+        cameraSpeed = 5.0f;
+    }
 
     glm::vec3 front = glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
     glm::vec3 right = glm::normalize(glm::cross(front, cameraUp));
@@ -74,6 +80,32 @@ void Camera::processInput(GLFWwindow *window, float deltaTime) {
         velocity -= right * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         velocity += right * cameraSpeed;
+
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        if (!leftMouseButtonPressed) {
+            leftMouseButtonPressed = true;
+            auto hit = RaycastSystem::cast(world, cameraPos, cameraFront, 5.0f);
+            if (hit.has_value()) {
+                std::cout << "We have a value!" << std::endl;
+                world.setBlock(hit->blockPosition.x, hit->blockPosition.y, hit->blockPosition.z, BlockID::Air);
+            }
+        }
+    } else {
+        leftMouseButtonPressed = false;
+    }
+
+    // Right Mouse Button (Place Block)
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        if (!rightMouseButtonPressed) {
+            rightMouseButtonPressed = true;
+            auto hit = RaycastSystem::cast(world, cameraPos, cameraFront, 5.0f);
+            if (hit.has_value()) {
+                world.setBlock(hit->previousBlockPosition.x, hit->previousBlockPosition.y, hit->previousBlockPosition.z, BlockID::Stone);
+            }
+        }
+    } else {
+        rightMouseButtonPressed = false;
+    }    
 }
 
 void Camera::updatePosition(World& world, float deltaTime) {

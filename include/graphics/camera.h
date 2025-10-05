@@ -35,11 +35,14 @@ public:
     bool firstMouse = true;
 
     void mouse_callback(double xpos, double ypos);
-    void processInput(GLFWwindow *window, float deltaTime);
+    void processInput(GLFWwindow *window, World& world, float deltaTime);
     void updatePosition(World& world, float deltaTime);
 
 private:
     bool onGround = false;
+
+    bool leftMouseButtonPressed = false;
+    bool rightMouseButtonPressed = false;
 };
 
 #endif

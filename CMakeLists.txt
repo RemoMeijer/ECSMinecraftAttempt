@@ -10,9 +10,15 @@ find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 
-file(GLOB_RECURSE SOURCES
-    "src/*.cpp"
-    "lib/glad.c"
+set(SOURCES
+    lib/glad.c
+    src/main.cpp
+    src/graphics/camera.cpp
+    src/graphics/shader.cpp
+    src/world/chunksystem.cpp
+    src/world/world.cpp
+    src/physics/physicssystem.cpp
+    src/world/raycast.cpp
 )
 
 add_executable(ecs-minecraft ${SOURCES})

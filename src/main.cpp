@@ -88,9 +88,9 @@ int main() {
         lastFrame = currentFrame;
 
         // Input
-        camera.processInput(window, deltaTime);
+        camera.processInput(window, world, deltaTime);
         camera.updatePosition(world, deltaTime);
-        
+
         // Update
         world.updateChunksAroundPlayer(camera.cameraPos);        
         world.update();
